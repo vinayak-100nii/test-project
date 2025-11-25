@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: microservice-app
+spec:
+ replicas: 1
+ selector:
+   matchLabels:
+     app: microservice
+ template:
+   metadata:
+     labels:
+       app: microservice
+   spec:
+     containers:
+     - name: microservice
+       image: <ECR_URL>
+       ports:
+       - containerPort: 3000
+       env:
+       - name: DB_HOST
+         value: "<RDS endpoint>"
+       - name: DB_PASSWORD
+         value: "yourpassword"
