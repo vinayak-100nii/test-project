@@ -18,7 +18,8 @@ jobs:
 
       - name: Login to ECR
         run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin 338861521662.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+          docker login --username AWS --password-stdin 338861521662.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
       - name: Build and push Docker image
         run: |
@@ -26,7 +27,13 @@ jobs:
           docker tag app-eks:latest 338861521662.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/app-eks:latest
           docker push 338861521662.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/app-eks:latest
 
-      - name: Update Kubernetes deployment
-        run: |
-          aws eks update-kubeconfig --name app-eks-js --region ${{ secrets.AWS_REGION }}
-          kubectl set image deployment/app-eks app-eks=338861521662.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/app-eks:latest
+      - name: Deploy to EKS via Jump Server
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.JUMP_SERVER_IP }}
+          username: ec2-user
+          key: ${{ secrets.JUMP_SERVER_KEY }}
+          script: |
+            aws eks update-kubeconfig --name app-eks-js --region ${{ secrets.AWS_REGION }}
+            kubectl set image deployment/microservice-app \
+              microservice=338861521662.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/app-eks:latest
