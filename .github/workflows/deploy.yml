@@ -1,9 +1,6 @@
 on:
- push:
-  branches: [ main ]
-permissions:
-  id-token: write
-  contents: read
+  push:
+    branches: [ main ]
 
 jobs:
   deploy:
@@ -15,20 +12,21 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
-          role-to-assume: arn:aws:iam::338861521662:role/GitHubActions-EKS-ECR-Deploy
-          aws-region: us-east-1
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to ECR
         run: |
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 338861521662.dkr.ecr.us-east-1.amazonaws.com
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin 338861521662.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
       - name: Build and push Docker image
         run: |
           docker build -t app-eks .
-          docker tag app-eks:latest 338861521662.dkr.ecr.us-east-1.amazonaws.com/app-eks:latest
-          docker push 338861521662.dkr.ecr.us-east-1.amazonaws.com/app-eks:latest
+          docker tag app-eks:latest 338861521662.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/app-eks:latest
+          docker push 338861521662.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/app-eks:latest
 
       - name: Update Kubernetes deployment
         run: |
-          aws eks update-kubeconfig --name my-cluster --region us-east-1
-          kubectl set image deployment/app-eks app-eks=338861521662.dkr.ecr.us-east-1.amazonaws.com/app-eks:latest
+          aws eks update-kubeconfig --name app-eks-js --region ${{ secrets.AWS_REGION }}
+          kubectl set image deployment/app-eks app-eks=338861521662.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/app-eks:latest
