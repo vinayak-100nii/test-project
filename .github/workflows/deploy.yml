@@ -1,0 +1,34 @@
+on:
+ push:
+  branches: [ main ]
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::338861521662:role/GitHubActions-EKS-ECR-Deploy
+          aws-region: us-east-1
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 338861521662.dkr.ecr.us-east-1.amazonaws.com
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t app-eks .
+          docker tag app-eks:latest 338861521662.dkr.ecr.us-east-1.amazonaws.com/app-eks:latest
+          docker push 338861521662.dkr.ecr.us-east-1.amazonaws.com/app-eks:latest
+
+      - name: Update Kubernetes deployment
+        run: |
+          aws eks update-kubeconfig --name my-cluster --region us-east-1
+          kubectl set image deployment/app-eks app-eks=338861521662.dkr.ecr.us-east-1.amazonaws.com/app-eks:latest
