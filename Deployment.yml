@@ -14,11 +14,11 @@ spec:
    spec:
      containers:
      - name: microservice
-       image: <ECR_URL>
+       image: 338861521662.dkr.ecr.us-east-1.amazonaws.com/app-eks:latest
        ports:
        - containerPort: 3000
        env:
        - name: DB_HOST
-         value: "<RDS endpoint>"
+         value: database-2.ci9qo2yy2ygl.us-east-1.rds.amazonaws.com
        - name: DB_PASSWORD
-         value: "yourpassword"
+         value: admin123
